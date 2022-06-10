@@ -1,21 +1,11 @@
-import express from "express";
-import router from "./routes/routes";
-import cors from "cors";
-import bodyParser from "body-parser";
-
-import {
-  addUser,
-  removeUser,
-  getUser,
-  getUsersInRoom,
-} from "./controllers/Users";
-
-const http = require("http");
-const { Server } = require("socket.io");
+const express = require("express");
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
+const http = require("http");
 const server = http.createServer(app);
+const { Server } = require("socket.io");
+const bodyParser = require("body-parser");
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 //Socket.io + Node.js Cross-Origin Request
 const io = new Server(server, {
@@ -32,7 +22,7 @@ const io = new Server(server, {
     },
   },
 });
-
+/////////////////////////////////////////////////
 //Connection
 io.on("connection", (socket) => {
   console.log("lab2 pushAndPull");
@@ -42,7 +32,6 @@ io.on("connection", (socket) => {
 
     if (error) return callback(error);
     socket.join(user.ROOM);
-
     //To send Messages
     socket.emit("message", {
       user: "Admin",
@@ -58,7 +47,6 @@ io.on("connection", (socket) => {
 
     callback();
   });
-
   //To Recieve Messages
   socket.on("sendMessage", (message, callback) => {
     const user = getUser(socket.id);
@@ -83,12 +71,47 @@ io.on("connection", (socket) => {
     }
   });
 });
+///////////////////////////////////////////
+const users = [];
+//ADD uSER
+const addUser = ({ ID, NAME, ROOM }) => {
+  NAME = NAME.trim().toLowerCase();
+  ROOM = ROOM.trim().toLowerCase();
+  const currUser = users.find(
+    (users) => users.ROOM === ROOM && users.NAME === Name
+  );
 
-// app.get("/", (req, res) => {
-//   res.send("<h1>Hello world</h1>");
-// });
+  //validation
+  if (currUser) {
+    return { error: "User is Already here!" };
+  }
+  const user = { ID, NAME, ROOM };
+  users.push(user);
+  return { user };
+};
+////////////////////////////////////////////
+// REMOVE USER
+const removeUser = (ID) => {
+  const index = users.findIndex((user) => user.ID === ID);
+  if (index !== -1) {
+    return users.splice(index, 1)[0];
+  }
+};
 
+//GET USER
+const getUser = (ID) => users.find((user) => user.ID === ID);
+//GET USERS IN ROOM
+const getUsersInRoom = (room) => users.filter((user) => user.ROOM === ROOM);
+//test validation
+const Valid = (req, res) => {
+  res.send("Server is running now !!");
+};
+////////////////////////////////////////////////
+const router = express.Router();
+
+//Get
+router.get("/", Valid);
 app.use(router);
 server.listen(3000, () => {
-  console.log("listening on *:3000");
+  console.log("listening on:3000");
 });
